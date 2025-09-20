@@ -19,6 +19,16 @@ fi
 
 if ! docker info &> /dev/null; then
     echo "ERROR: Docker no está ejecutándose o no tienes permisos."
+    echo ""
+    echo "Soluciones posibles:"
+    echo "1. Añadir tu usuario al grupo docker:"
+    echo "   sudo usermod -aG docker \$USER"
+    echo "   newgrp docker"
+    echo ""
+    echo "2. O reinicia tu sesión después del comando anterior"
+    echo "3. Verificar que Docker esté ejecutándose:"
+    echo "   sudo systemctl start docker"
+    echo "   sudo systemctl enable docker"
     exit 1
 fi
 
