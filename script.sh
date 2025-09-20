@@ -1,34 +1,15 @@
 #!/bin/bash
-# Instalador automático de Docker + Docker Compose + Ghost + Tor + Watchtower
-# Autor: zanyllect68
+# 🚀 Instalador automático de Ghost + Tor + Watchtower en Docker
+# Autor: <tu_nombre>
+# Fecha: $(date +"%Y-%m-%d")
 
-set -e  # detener ejecución si hay error
+set -e
 
-echo "📦 Actualizando sistema..."
-sudo dnf update -y --skip-broken
+echo "📂 Creando estructura de directorios..."
+mkdir -p ~/blog-ghost/{content,tor-data}
 
-echo "📌 Agregando repositorio oficial de Docker..."
-sudo dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-
-echo "🐳 Instalando Docker CE, CLI y Containerd..."
-sudo dnf install -y docker-ce docker-ce-cli containerd.io --nobest --allowerasing
-
-echo "🔧 Habilitando y arrancando servicio de Docker..."
-sudo systemctl enable docker
-sudo systemctl start docker
-
-echo "✅ Verificando instalación de Docker..."
-docker --version || { echo "❌ Error: Docker no se instaló correctamente"; exit 1; }
-
-echo "📦 Verificando instalación de Docker Compose..."
-docker compose version || { echo "❌ Error: Docker Compose no se instaló correctamente"; exit 1; }
-
-echo "📂 Creando estructura de proyecto..."
-mkdir -p ~/WebTor/{content,tor-data}
-cd ~/WebTor
-
-echo "📝 Generando archivo docker-compose.yml..."
-cat > docker-compose.yml <<'EOF'
+echo "📦 Copiando docker-compose.yml..."
+cat > ~/blog-ghost/docker-compose.yml << 'EOF'
 version: '3.9'
 
 services:
@@ -68,16 +49,12 @@ services:
       WATCHTOWER_SCHEDULE: "0 4 * * *"
 EOF
 
-echo "🚀 Desplegando servicios con Docker Compose..."
+echo "✅ Configuración generada en ~/blog-ghost/docker-compose.yml"
+
+echo "🚀 Levantando servicios con Docker Compose..."
+cd ~/blog-ghost
 docker compose up -d
 
-echo "🔑 Obteniendo dirección Onion..."
-sleep 10
-if [ -f ./tor-data/hostname ]; then
-  echo "✅ Dirección Onion:"
-  cat ./tor-data/hostname
-else
-  echo "⚠️ Aún no se generó el hostname, revisa en ~/WebTor/tor-data después de unos segundos."
-fi
+echo "🎉 Blog Ghost + Tor desplegado correctamente."
+echo "👉 La dirección .onion aparecerá dentro de ~/blog-ghost/tor-data/hostname"
 
-echo "🎉 Instalación completada con éxito."
