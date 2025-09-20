@@ -22,3 +22,15 @@ El objetivo es contar con un espacio de publicación **privado, seguro y resiste
 
 ---
 
+## ⚙️ Instalación
+
+### 1. Clonar el proyecto
+```bash
+git clone https://github.com/Zanyllect68/secure-blog-ghost-docker-tor.git
+cd WebTor
+```
+
+```bash
+chmod +x script.sh
+./script.sh
+```
