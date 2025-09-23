@@ -1,0 +1,88 @@
+# falta completarlo 
+
+version: '3.8'   # Versión del formato de Docker Compose
+
+services:
+  tor:
+    container_name: tor   # Nombre fijo del contenedor Tor
+    image: goldy/tor-hidden-service:0.3.5.8   # Imagen de Tor (servicio oculto)
+    restart: always   # Reinicia el contenedor automáticamente si falla o tras un reinicio del servidor
+    depends_on:
+      - ghost   # Este servicio arranca después de que Ghost esté listo
+    environment:
+      SERVICE_NAME: ghost   # Indica que el servicio oculto apunta a Ghost
+      SERVICE_PORT: 2368    # Puerto interno de Ghost que Tor expondrá en .onion
+    volumes:
+      - ./tor-config:/etc/tor:ro   # Configuración personalizada de Tor (solo lectura)
+      - ./tor-data:/var/lib/tor/hidden_service   # Donde Tor guarda las llaves y el hostname .onion
+    networks:
+      - onion     # Red para exponer a la red Tor
+      - internal  # Red interna para hablar con Ghost
+    deploy:   # Límites de recursos
+      resources:
+        limits:
+          cpus: '0.50'     # Máximo 50% de un CPU
+          memory: 512M     # Máximo 512 MB de RAM
+        reservations:
+          cpus: '0.25'     # Reserva mínima de 25% de un CPU
+          memory: 256M     # Reserva mínima de 256 MB de RAM
+
+  ghost:
+    container_name: ghost   # Nombre fijo del contenedor Ghost
+    image: ghost:5-alpine   # Imagen ligera de Ghost CMS
+    restart: always
+    ports:
+      - 8080:2368   # Expone Ghost en http://localhost:8080 (para debug o acceso directo)
+    depends_on:
+      - db   # Ghost necesita que la base de datos esté levantada primero
+    environment:
+      database__client: mysql   # Motor de base de datos
+      database__connection__host: db   # Nombre del servicio DB (resuelto en la red interna)
+      database__connection__user: root
+      database__connection__password: example
+      database__connection__database: ghost
+      url: http://localhost:8080   # URL pública de Ghost (aquí se puede cambiar por la .onion)
+    volumes:
+      - ghost:/var/lib/ghost/content   # Persistencia del contenido (posts, imágenes, temas, etc.)
+    networks:
+      - onion     # También está conectado a la red Tor
+      - internal  # Y a la red interna con la DB
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  db:
+    container_name: ghost_db   # Nombre del contenedor de la base de datos
+    image: mysql:8.0   # Imagen oficial de MySQL
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: example   # Contraseña del usuario root (se recomienda cambiarla en producción)
+    volumes:
+      - db:/var/lib/mysql   # Persistencia de la base de datos
+    networks:
+      - internal   # Solo accesible desde la red interna (Ghost puede conectarse, Tor no)
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+# Definición de redes
+networks:
+  internal:
+    driver: bridge   # Red privada entre Ghost y la base de datos
+  onion:
+    driver: bridge   # Red para exponer Ghost a través de Tor
+
+# Definición de volúmenes persistentes
+volumes:
+  ghost:   # Contenido de Ghost (temas, imágenes, posts)
+  db:      # Base de datos MySQL
